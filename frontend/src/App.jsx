@@ -1,34 +1,40 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-blue-600 p-4">
+        <nav className="max-w-4xl mx-auto flex justify-between items-center">
+          <h1 className="text-white font-bold text-xl">My Website</h1>
+          
+          {/* Mobile menu button */}
+          <button 
+            className="md:hidden text-white"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            Menu
+          </button>
+
+          {/* Desktop menu */}
+          <ul className="hidden md:flex space-x-4">
+            <li><a href="#" className="text-white hover:text-blue-200">Home</a></li>
+            <li><a href="#" className="text-white hover:text-blue-200">About</a></li>
+            <li><a href="#" className="text-white hover:text-blue-200">Contact</a></li>
+          </ul>
+
+          {/* Mobile menu */}
+          {isMobileMenuOpen && (
+            <ul className="absolute top-16 left-0 right-0 bg-blue-600 p-4 md:hidden">
+              <li><a href="#" className="block py-2 text-white hover:text-blue-200">Home</a></li>
+              <li><a href="#" className="block py-2 text-white hover:text-blue-200">About</a></li>
+              <li><a href="#" className="block py-2 text-white hover:text-blue-200">Contact</a></li>
+            </ul>
+          )}
+        </nav>
+      </header>
+    </div>
   )
 }
 
