@@ -17,8 +17,6 @@
     hover:-translate-y-1;
   }
 
-  /* Add to index.css */
-
   .glass {
     @apply backdrop-blur-md 
            bg-white/15 
