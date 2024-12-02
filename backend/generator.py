@@ -1,11 +1,14 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.oauth2 import SpotifyOAuth
+import os
+import dotenv
 
 # Spotify API credentials
-SPOTIFY_CLIENT_ID = "your_spotify_client_id"
-SPOTIFY_CLIENT_SECRET = "your_spotify_client_secret"
-SPOTIFY_REDIRECT_URI = "http://localhost:8888/callback"
+dotenv.load_dotenv()
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_REDIRECT_URI = "https://localhost:5173/callback"
 
 # Setting up Spotify client for authentication
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -15,6 +18,7 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope="playlist-modify-private"
 ))
 
+# Do not forget to convert spotify playlist to yt music if user selects spotify as their app
 # Function to generate a playlist based on user preferences
 def generate_playlist(username, genre, energy, valence, aggressiveness, playlist_name="Generated Playlist"):
     # Using Spotify's recommendations endpoint

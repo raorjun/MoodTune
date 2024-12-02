@@ -2,10 +2,13 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from ytmusicapi import YTMusic
 import re
+import os
+import dotenv
 
 # Spotify API credentials
-SPOTIFY_CLIENT_ID = "your_spotify_client_id"
-SPOTIFY_CLIENT_SECRET = "your_spotify_client_secret"
+dotenv.load_dotenv()
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # Set up Spotify client
 spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
@@ -13,7 +16,7 @@ spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
 ))
 
 # Set up YouTube Music client
-ytmusic = YTMusic("headers_auth.json")  # Need to generate and provide this file
+ytmusic = YTMusic("config/oauth.json")  # Need to generate and provide this file
 
 # Function to extract Spotify playlist tracks
 def get_spotify_tracks(playlist_url):
