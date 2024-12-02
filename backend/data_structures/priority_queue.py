@@ -1,9 +1,15 @@
 from .heap import Heap
 
 class PriorityQueue:
+    """
+    A priority queue is a data structure that stores elements with priorities.
+    """
+
     def __init__(self):
-        # We should base the implementation off of a heap, since it is more efficient over a list. 
-        # Make sure that you are inserting only tuples structured: (priority_weight (int), value (Any))
+        """
+        Initializes a new instance of the PriorityQueue class.
+        Stores tuple structured: (priority (int), value (Any))
+        """
         self.queue = Heap()
     
     def is_empty(self):
@@ -21,7 +27,7 @@ class PriorityQueue:
         """
         self.queue.insert((priority, item))
 
-    def delete(self):
+    def pop(self):
         """
         Remove and return the item with the highest priority.
         :return: The item with the highest priority.
@@ -42,3 +48,12 @@ class PriorityQueue:
             return None
         
         return top.get(1)
+    
+    def size(self):
+        """
+        Return the number of elements in the priority queue.
+        :return: The number of elements.
+        """
+        return self.queue.size()
+    
+

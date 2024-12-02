@@ -1,12 +1,12 @@
 class Heap:
     """
-    Heap data structure implementation.
+    Basic min heap data structure implementation.
     """
 
     def __init__(self):
         """
         Initializes a new instance of the Heap class.
-        Only store tuple structures: (weight (int), value (Any))
+        Only store tuple structured: (weight (int), value (Any))
         """
         self._data = []
 
