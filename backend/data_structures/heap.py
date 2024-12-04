@@ -1,7 +1,7 @@
 class Heap:
     """
-    A basic min-heap data structure that stores elements with a weight and value.
-    The heap maintains the heap property such that the smallest element is always at the root.
+    A basic max-heap data structure that stores elements with a weight and value.
+    The heap maintains the heap property such that the largest element is always at the root.
 
     Attributes:
         _data (list): The internal list used to store the heap elements as tuples of (weight, value).
@@ -32,10 +32,10 @@ class Heap:
 
     def pop(self):
         """
-        Removes and returns the minimum value (root of the heap) from the heap.
+        Removes and returns the maximum value (root of the heap) from the heap.
 
         Returns:
-            tuple or None: The minimum value as a tuple (weight, value), or None if the heap is empty.
+            tuple or None: The maximum value as a tuple (weight, value), or None if the heap is empty.
         """
         if self.is_empty():
             return None
@@ -48,10 +48,10 @@ class Heap:
 
     def peek(self):
         """
-        Returns the minimum value (root of the heap) without removing it.
+        Returns the maximum value (root of the heap) without removing it.
 
         Returns:
-            tuple or None: The minimum value as a tuple (weight, value), or None if the heap is empty.
+            tuple or None: The maximum value as a tuple (weight, value), or None if the heap is empty.
         """
         if self.is_empty():
             return None
@@ -88,7 +88,7 @@ class Heap:
         
         parent = (index - 1) // 2
         compare = self._compare(self._data[parent], self._data[index])
-        if compare == 1:
+        if compare == -1:
             # Swap the node with its parent and continue moving up the tree
             self._data[parent], self._data[index] = self._data[index], self._data[parent]
             self._heapify_up(parent)
@@ -104,18 +104,18 @@ class Heap:
             return
         
         children = [2 * index + 1, 2 * index + 2]
-        smallest = index
+        largest = index
         
         for child in children:
             if child < self.size():
-                comp = self._compare(self._data[smallest], self._data[child])
-                if comp == 1:
-                    smallest = child
+                comp = self._compare(self._data[largest], self._data[child])
+                if comp == -1:
+                    largest = child
 
-        if smallest != index:
-            # Swap the node with the smallest child and continue moving down the tree
-            self._data[smallest], self._data[index] = self._data[index], self._data[smallest]
-            self._heapify_down(smallest)
+        if largest != index:
+            # Swap the node with the largest child and continue moving down the tree
+            self._data[largest], self._data[index] = self._data[index], self._data[largest]
+            self._heapify_down(largest)
 
     def _compare(self, item1, item2):
         """
@@ -126,13 +126,13 @@ class Heap:
             item2 (tuple): The second item (weight, value) to be compared.
 
         Returns:
-            int: -1 if item1's weight is less than item2's, 
-                 1 if item1's weight is greater than item2's, 
+            int: 1 if item1's weight is less than item2's, 
+                -1 if item1's weight is greater than item2's, 
                  0 if both weights are equal.
         """
-        if item1[0] < item2[0]:
+        if item1[0] > item2[0]:
             return -1
-        elif item1[0] > item2[0]:
+        elif item1[0] < item2[0]:
             return 1
         
         return 0
