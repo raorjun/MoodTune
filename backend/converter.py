@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 import json
 
 # Spotify API credentials
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(__file__), 'config', '.env')
+load_dotenv(dotenv_path)
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_REDIRECT_URI = "https://localhost:5173/callback"
