@@ -2,6 +2,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.oauth2 import SpotifyOAuth
 import os
+from data_structures import PriorityQueue
 import dotenv
 
 # Spotify API credentials
@@ -23,11 +24,11 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
 def generate_playlist(username, genre, energy, valence, activity, explicit, amount, environment, playlist_name="Generated Playlist"):
     # Using Spotify's recommendations endpoint
 
-    if explicit == False:
+    if explicit == True:
         amount += 400
     else:
         amount += 100
-        
+
     recommendations = None
     if environment == None:
         recommendations = spotify.recommendations(
@@ -68,7 +69,8 @@ def generate_playlist(username, genre, energy, valence, activity, explicit, amou
             target_energy=energy,
             target_valence=valence
         )
-    track_uris = [track["uri"] for track in recommendations["tracks"]]
+    tracks = generate_playlist_helper(recommendations, activity, amount)
+    track_uris = [track["uri"] for track in tracks]
 
     # Creates a new Spotify playlist
     playlist = spotify.user_playlist_create(user=username, name=playlist_name, public=False)
@@ -77,11 +79,29 @@ def generate_playlist(username, genre, energy, valence, activity, explicit, amou
     return playlist["external_urls"]["spotify"]
 
 def generate_playlist_helper(recommendations, activity, amount):
-    for playlist in playlists:
-        if playlist["name"] == "Generated Playlist":
-            return playlist["external_urls"]["spotify"]
     
-    return generate_playlist(username, genre, energy, valence, aggressiveness)
+    prioritized_tracks = PriorityQueue()
+    for track in recommendations["tracks"]:
+        track_features = spotify.audio_features(track["uri"])[0]
+        weight = 0
+
+        if activity == "working out":
+            weight = track_features["loudness"] + track_features["energy"] + track_features["valence"]
+        elif activity == "partying":
+            weight = track_features["danceability"] + track_features["energy"] + track_features["loudness"]
+        elif activity == "dancing":
+            weight = track_features["danceability"]
+        elif activity == "running":
+            weight = track_features["energy"] + track_features["valence"]
+        elif activity == "studying" or activity == "relaxing":
+            weight = -track_features["valence"] - track_features["energy"] - track_features["loudness"]
+
+        prioritized_tracks.insert((weight, track))
+
+    top_tracks = [prioritized_tracks.pop() for _ in range(amount)]
+
+    return top_tracks
+        
 
 # Main function to collect user input and generate a playlist
 if __name__ == "__main__":

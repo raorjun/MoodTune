@@ -1,12 +1,13 @@
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
+from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 from ytmusicapi import YTMusic
 import re
 import os
-import dotenv
+from dotenv import load_dotenv
+import json
 
 # Spotify API credentials
-dotenv.load_dotenv()
+load_dotenv()
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_REDIRECT_URI = "https://localhost:5173/callback"
@@ -20,7 +21,15 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
 ))
 
 # Set up YouTube Music client
-ytmusic = YTMusic("oauth.json")  # Need to generate and provide this file
+current_directory = os.path.dirname(os.path.abspath("oauth.json")) # Need to generate and provide this file
+with open(current_directory, "r") as oauth_file:
+    data = oauth_file.read()
+    try:
+        json.loads(data)
+        print("Valid JSON")
+    except json.JSONDecodeError as e:
+        print(f"Invalid JSON: {e}")
+ytmusic = YTMusic(current_directory)
 
 # Function to extract Spotify playlist tracks
 def get_spotify_tracks(playlist_url):
