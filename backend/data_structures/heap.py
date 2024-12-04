@@ -1,12 +1,18 @@
 class Heap:
     """
-    Basic min heap data structure implementation.
+    A basic min-heap data structure that stores elements with a weight and value.
+    The heap maintains the heap property such that the smallest element is always at the root.
+
+    Attributes:
+        _data (list): The internal list used to store the heap elements as tuples of (weight, value).
     """
 
     def __init__(self):
         """
         Initializes a new instance of the Heap class.
-        Only store tuple structured: (weight (int), value (Any))
+
+        The heap stores elements as tuples in the form (weight, value), where weight is an integer 
+        and value can be any object.
         """
         self._data = []
 
@@ -14,7 +20,11 @@ class Heap:
         """
         Inserts a new value into the heap.
 
-        :param value: The value to be inserted.
+        Args:
+            value (tuple): The value to be inserted into the heap, expected to be a tuple (weight, value).
+        
+        Returns:
+            bool: True after successfully inserting the value into the heap.
         """
         self._data.append(value)
         self._heapify_up(self.size() - 1)
@@ -22,26 +32,27 @@ class Heap:
 
     def pop(self):
         """
-        Extracts the minimum value from the heap.
+        Removes and returns the minimum value (root of the heap) from the heap.
 
-        :return: The minimum value.
+        Returns:
+            tuple or None: The minimum value as a tuple (weight, value), or None if the heap is empty.
         """
-        
         if self.is_empty():
             return None
         
         rtn = self._data[0]
         self._data[0] = self._data[self.size() - 1]
+        self._data.pop()  # Remove the last element
         self._heapify_down(0)
         return rtn
 
     def peek(self):
         """
-        Returns the minimum value from the heap without removing it.
+        Returns the minimum value (root of the heap) without removing it.
 
-        :return: The minimum value.
+        Returns:
+            tuple or None: The minimum value as a tuple (weight, value), or None if the heap is empty.
         """
-        
         if self.is_empty():
             return None
         
@@ -51,15 +62,17 @@ class Heap:
         """
         Returns the number of elements in the heap.
 
-        :return: The number of elements.
+        Returns:
+            int: The number of elements currently in the heap.
         """
         return len(self._data)
-    
+
     def is_empty(self):
         """
-        Returns a boolean value indicating whether the heap is empty.
+        Checks if the heap is empty.
 
-        :return: True if the heap is empty, False otherwise.
+        Returns:
+            bool: True if the heap is empty, False otherwise.
         """
         return self.size() == 0
 
@@ -67,50 +80,59 @@ class Heap:
         """
         Maintains the heap property by moving a node up the tree.
 
-        :param index: The index of the node to move up.
+        Args:
+            index (int): The index of the node to be moved up the tree.
         """
-        
         if index == 0:
             return
         
-        parent = (index - 1) / 2
-        compare = self._compare( self._data[parent], self._data[index])
+        parent = (index - 1) // 2
+        compare = self._compare(self._data[parent], self._data[index])
         if compare == 1:
-            tmp = self._data[parent]
-            self._data[parent] = self._data[index]
-            self._data[index] = tmp
+            # Swap the node with its parent and continue moving up the tree
+            self._data[parent], self._data[index] = self._data[index], self._data[parent]
             self._heapify_up(parent)
 
     def _heapify_down(self, index):
         """
         Maintains the heap property by moving a node down the tree.
 
-        :param index: The index of the node to move down.
+        Args:
+            index (int): The index of the node to be moved down the tree.
         """
-        
         if index >= self.size():
             return
         
         children = [2 * index + 1, 2 * index + 2]
-        min = index
+        smallest = index
+        
         for child in children:
             if child < self.size():
-                comp = self._compare(self._data[min], self._data[child])
+                comp = self._compare(self._data[smallest], self._data[child])
                 if comp == 1:
-                    min = child
+                    smallest = child
+
+        if smallest != index:
+            # Swap the node with the smallest child and continue moving down the tree
+            self._data[smallest], self._data[index] = self._data[index], self._data[smallest]
+            self._heapify_down(smallest)
 
     def _compare(self, item1, item2):
         """
         Compares two items in the heap.
 
-        :param item1: The first item.
-        :param item2: The second item.
-        :return: 1 if item1 is greater than item2, -1 if item1 is less than item2, and 0 otherwise.
-        """
+        Args:
+            item1 (tuple): The first item (weight, value) to be compared.
+            item2 (tuple): The second item (weight, value) to be compared.
 
-        if item1.get(0) < item2.get(0):
+        Returns:
+            int: -1 if item1's weight is less than item2's, 
+                 1 if item1's weight is greater than item2's, 
+                 0 if both weights are equal.
+        """
+        if item1[0] < item2[0]:
             return -1
-        elif item1.get(0) > item2.get(0):
+        elif item1[0] > item2[0]:
             return 1
         
         return 0

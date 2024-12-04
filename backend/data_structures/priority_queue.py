@@ -17,7 +17,7 @@ class PriorityQueue:
         The priority queue stores elements as tuples in the form (priority, value), 
         where priority is an integer and value can be any object.
         """
-        self.queue = Heap()
+        self._queue = Heap()
     
     def is_empty(self):
         """
@@ -26,7 +26,7 @@ class PriorityQueue:
         Returns:
             bool: True if the queue is empty, False otherwise.
         """
-        return self.queue.is_empty()
+        return self._queue.is_empty()
 
     def insert(self, item, priority):
         """
@@ -36,7 +36,7 @@ class PriorityQueue:
             item (Any): The item to be inserted into the queue.
             priority (int): The priority of the item, where a lower value indicates higher priority.
         """
-        self.queue.insert((priority, item))
+        self._queue.insert((priority, item))
 
     def pop(self):
         """
@@ -45,7 +45,7 @@ class PriorityQueue:
         Returns:
             Any: The item with the highest priority, or None if the queue is empty.
         """
-        top = self.queue.pop()
+        top = self._queue.pop()
         if top is None:
             return None
         
@@ -58,7 +58,7 @@ class PriorityQueue:
         Returns:
             Any: The item with the highest priority, or None if the queue is empty.
         """
-        top = self.queue.peek()
+        top = self._queue.peek()
         if top is None:
             return None
         
@@ -71,4 +71,4 @@ class PriorityQueue:
         Returns:
             int: The number of elements in the queue.
         """
-        return self.queue.size()
+        return self._queue.size()
