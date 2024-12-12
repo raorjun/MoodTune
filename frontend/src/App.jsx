@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import spotifyIcon from './assets/spotify.svg'
-import ytMusicIcon from './assets/youtube.svg'
-import arrowIcon from './assets/arrow.svg'
+import { useState } from 'react';
+import spotifyIcon from './assets/spotify.svg';
+import ytMusicIcon from './assets/youtube.svg';
+import arrowIcon from './assets/arrow.svg';
 
 function App() {
   const [selectedPlatform, setSelectedPlatform] = useState(null);
@@ -11,13 +11,15 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [moodParams, setMoodParams] = useState({
-    valence: 0.5,
-    energy: 0.5,
-    environment: '',
+    seed_playlist_id: '',
+    seed_platform: '',
+    target_platform: '',
+    target_energy: 0.5,
+    target_valence: 0.5,
     activity: '',
-    genre: '',
+    environment: '',
     songCount: 20,
-    explicit: false
+    playlist_name: '',
   });
 
   const handleGenerate = () => {
@@ -34,20 +36,23 @@ function App() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('http://localhost:5000/generate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          target_energy: moodParams.energy,
-          target_valence: moodParams.valence,
+        body: JSON.stringify({
+          seed_playlist_id: moodParams.seed_playlist_id,
+          seed_platform: moodParams.seed_platform,
+          target_platform: moodParams.target_platform,
+          target_energy: moodParams.target_energy,
+          target_valence: moodParams.target_valence,
           activity: moodParams.activity,
           environment: moodParams.environment,
           amount: moodParams.songCount,
-          seed_platform: selectedPlatform
+          playlist_name: moodParams.playlist_name,
         }),
       });
 
@@ -68,33 +73,34 @@ function App() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
+    
     try {
       const response = await fetch('http://localhost:5000/convert', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          source_url: playlistUrl,
+        body: JSON.stringify({
+          playlist_url: playlistUrl,
           target_platform: selectedPlatform,
         }),
       });
-
+  
       const data = await response.json();
-      
-      if (!response.ok) {
+      console.log(data);  // Log the response data
+  
+      if (response.ok) {
+        if (data.url) {
+          console.log('Opening URL:', data.url);  // Log URL to verify it's correct
+          window.open(data.url, '_blank');  // Open the playlist URL in a new tab
+        } else {
+          throw new Error('No URL returned from the server');
+        }
+      } else {
         throw new Error(data.error || 'Failed to convert playlist');
       }
-
-      window.open(data.url, '_blank');
-      
-      // Reset the form
-      setPlaylistUrl('');
-      setSelectedPlatform(null);
-      setShowPlatformSelect(false);
-      setIsConverting(false);
     } catch (err) {
+      console.error('Error:', err.message);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -104,11 +110,13 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <main className="container mx-auto px-4 py-12">
-        {/*hero - main page*/}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white/90 mb-8">MoodTune</h1>
           <h2 className="text-7xl font-bold text-white mb-6">
-            Your Mood, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-500 to-violet-600 animate-gradient">Your Music</span>
+            Your Mood,{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-500 to-violet-600 animate-gradient">
+              Your Music
+            </span>
           </h2>
           <p className="text-2xl text-white/80 mb-16">Generate playlists that match your emotional state</p>
         </div>
@@ -118,19 +126,13 @@ function App() {
           <div className="max-w-md mx-auto space-y-4">
             <button
               onClick={handleGenerate}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg 
-                bg-gradient-to-r from-blue-500 to-indigo-600 text-white 
-                transition-all duration-300 hover:shadow-xl hover:scale-105
-                hover:from-blue-600 hover:to-indigo-700"
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
             >
               Generate New Playlist
             </button>
             <button
               onClick={handleConvertClick}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg 
-                bg-gradient-to-r from-purple-500 to-violet-600 text-white 
-                transition-all duration-300 hover:shadow-xl hover:scale-105
-                hover:from-purple-600 hover:to-violet-700"
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 text-white"
             >
               Convert Existing Playlist
             </button>
@@ -141,24 +143,18 @@ function App() {
         {showPlatformSelect && !selectedPlatform && (
           <div className="max-w-md mx-auto space-y-4">
             <p className="text-white text-center mb-4">
-              {isConverting ? "Select platform to convert to:" : "Choose your platform:"}
+              {isConverting ? 'Select platform to convert to:' : 'Choose your platform:'}
             </p>
             <button
               onClick={() => setSelectedPlatform('spotify')}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg 
-                bg-gradient-to-r from-blue-500 to-indigo-600 text-white 
-                transition-all duration-300 hover:shadow-xl hover:scale-105
-                hover:from-blue-600 hover:to-indigo-700"
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
             >
               <img src={spotifyIcon} alt="Spotify" className="w-6 h-6" />
               Connect with Spotify
             </button>
             <button
               onClick={() => setSelectedPlatform('ytmusic')}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg 
-                bg-gradient-to-r from-blue-500 to-indigo-600 text-white 
-                transition-all duration-300 hover:shadow-xl hover:scale-105
-                hover:from-blue-600 hover:to-indigo-700"
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
             >
               <img src={ytMusicIcon} alt="YouTube Music" className="w-6 h-6" />
               Connect with YouTube Music
@@ -177,9 +173,7 @@ function App() {
                 setPlaylistUrl('');
                 setError(null);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg 
-                bg-white/10 text-white/80 hover:bg-white/20
-                transition-all duration-300 hover:shadow-lg"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white/80"
             >
               <img src={arrowIcon} alt="Go Back" className="w-5 h-5" />
               Go Back
@@ -199,23 +193,16 @@ function App() {
                   onChange={(e) => setPlaylistUrl(e.target.value)}
                   placeholder="https://open.spotify.com/playlist/..."
                   required
-                  className="w-full bg-white/10 rounded-lg px-4 py-2 text-white border border-white/20 focus:border-white/40 focus:outline-none"
+                  className="w-full bg-white/10 rounded-lg px-4 py-2 text-white border border-white/20"
                 />
               </div>
-              
-              {error && (
-                <div className="text-red-400 text-sm text-center">
-                  {error}
-                </div>
-              )}
+
+              {error && <div className="text-red-400 text-sm text-center">{error}</div>}
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg 
-                  bg-gradient-to-r from-purple-500 to-violet-600 text-white 
-                  transition-all duration-300 hover:shadow-xl hover:scale-105
-                  disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 text-white"
               >
                 {isLoading ? 'Converting...' : 'Convert Playlist'}
               </button>
@@ -236,8 +223,8 @@ function App() {
                       type="range"
                       min="0"
                       max="100"
-                      value={moodParams.valence * 100}
-                      onChange={(e) => setMoodParams({ ...moodParams, valence: parseInt(e.target.value) / 100 })}
+                      value={moodParams.target_valence * 100}
+                      onChange={(e) => setMoodParams({ ...moodParams, target_valence: parseInt(e.target.value) / 100 })}
                       className="w-full accent-white/80"
                     />
                   </div>
@@ -247,20 +234,20 @@ function App() {
                       type="range"
                       min="0"
                       max="100"
-                      value={moodParams.energy * 100}
-                      onChange={(e) => setMoodParams({ ...moodParams, energy: parseInt(e.target.value) / 100 })}
+                      value={moodParams.target_energy * 100}
+                      onChange={(e) => setMoodParams({ ...moodParams, target_energy: parseInt(e.target.value) / 100 })}
                       className="w-full accent-white/80"
                     />
                   </div>
                 </div>
 
-                {/*context input*/}
+                {/* Context Input */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-white text-sm mb-1 block">Environment</label>
-                    <select
+                    <input
+                      type="text"
                       className="w-full bg-white/10 rounded-lg px-4 py-2 text-white"
-                      placeholder="Where are you?"
                       value={moodParams.environment}
                       onChange={(e) => setMoodParams({ ...moodParams, environment: e.target.value })}
                     />
@@ -270,70 +257,22 @@ function App() {
                     <input
                       type="text"
                       className="w-full bg-white/10 rounded-lg px-4 py-2 text-white"
-                      placeholder="What are you doing?"
                       value={moodParams.activity}
                       onChange={(e) => setMoodParams({ ...moodParams, activity: e.target.value })}
                     />
                   </div>
-                  <div>
-                    <label className="text-white text-sm mb-1 block">Genre</label>
-                    <input
-                      type="text"
-                      className="w-full bg-white/10 rounded-lg px-4 py-2 text-white"
-                      placeholder="Preferred genre"
-                      value={moodParams.genre}
-                      onChange={(e) => setMoodParams({ ...moodParams, genre: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-white text-sm mb-1 block">Number of Songs</label>
-                    <input
-                      type="number"
-                      min="10"
-                      max="50"
-                      className="w-full bg-white/10 rounded-lg px-4 py-2 text-white"
-                      value={moodParams.songCount}
-                      onChange={(e) => setMoodParams({ ...moodParams, songCount: parseInt(e.target.value) })}
-                    />
-                  </div>
                 </div>
 
-                {/* Settings */}
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="explicit"
-                    checked={moodParams.explicit}
-                    onChange={(e) => setMoodParams({ ...moodParams, explicit: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label htmlFor="explicit" className="text-white text-sm">Allow explicit content</label>
+                <div className="space-y-4">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 text-white"
+                  >
+                    {isLoading ? 'Generating...' : 'Generate Playlist'}
+                  </button>
                 </div>
-
-                {error && (
-                  <div className="text-red-400 text-sm text-center">
-                    {error}
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <button 
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-2 rounded-lg 
-                    transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600 text-white 
-                    hover:shadow-lg hover:scale-105
-                    disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isLoading ? 'Generating...' : 'Generate Playlist'}
-                </button>
               </form>
-            </div>
-
-            {/* Graph Visualization */}
-            <div className="card-modern min-h-[400px] flex items-center justify-center">
-              <p className="text-white/60 text-center">
-                Song correlation graph will appear here
-              </p>
             </div>
           </div>
         )}

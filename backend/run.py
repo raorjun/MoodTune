@@ -1,75 +1,67 @@
-from flask import Flask, request, redirect, url_for, session, jsonify
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from converter import PlaylistConverter
 from generator import PlaylistGenerator
 import os
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Secure random key for session
+app.secret_key = os.urandom(24)  # Optional: only needed if using sessions
+CORS(app)  # Enable CORS for all routes
 
-# Initialize Playlist Generator
+# Initialize Playlist Generator and Converter
 playlist_generator = PlaylistGenerator()
-
-# Initialize Converter
 playlist_converter = PlaylistConverter()
-
 
 @app.route('/')
 def home():
-    return "Welcome to MoodTune!"
+    return jsonify({'message': 'Welcome to the MoodTune API'}), 200
 
 @app.route('/convert', methods=['POST'])
-def convert():
-    # Get form data from frontend
-    source_url = request.form.get('source_url')
-    target_platform = request.form.get('target_platform')
+def convert_playlist():
+    data = request.get_json()
 
-    if not source_url or not target_platform:
-        return jsonify({'error': 'Missing required parameters'}), 400
+    # Validate required fields
+    if not all(key in data for key in ['playlist_url', 'target_platform']):
+        return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        # Calls the conversion method
-        result_url = playlist_converter.convert_playlist(source_url, target_platform)
-
-        if result_url:
-            return jsonify({'url': result_url}), 200
-        else:
-            return jsonify({'error': 'Conversion failed'}), 500
+        converted_url = playlist_converter.convert_playlist(
+            source_url=data['playlist_url'],
+            target_platform=data['target_platform']
+        )
+        print(converted_url)
+        return jsonify({'url': converted_url}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/generate', methods=['POST'])
 def generate_playlist():
-    # Gets form data from the frontend
-    seed_playlist_id = request.form.get('seed_playlist_id')
-    seed_platform = request.form.get('seed_platform')
-    target_energy = float(request.form.get('target_energy'))
-    target_valence = float(request.form.get('target_valence'))
-    activity = request.form.get('activity')
-    environment = request.form.get('environment')
-    target_platform = request.form.get('target_platform')
-    amount = int(request.form.get('amount', 20))
-    playlist_name = request.form.get('playlist_name', "Generated Playlist")
+    data = request.get_json()
 
-    # Validates required fields
-    if not all([seed_playlist_id, seed_platform, target_energy, target_platform, target_valence, amount]):
-        return jsonify({'error': 'Missing required parameters'}), 400
+    # Validate required fields
+    required_fields = [
+        'seed_playlist_id', 'seed_platform', 'target_platform', 'target_energy',
+        'target_valence', 'activity', 'environment', 'amount', 'playlist_name'
+    ]
+    if not all(key in data for key in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        # Generates the playlist
         playlist_url = playlist_generator.generate_playlist_from_seed(
-            seed_playlist_id=seed_playlist_id,
-            seed_platform=seed_platform,
-            target_platform=target_platform,
-            target_energy=target_energy,
-            target_valence=target_valence,
-            activity=activity,
-            environment=environment,
-            amount=amount,
-            playlist_name=playlist_name
+            seed_playlist_id=data['seed_playlist_id'],
+            seed_platform=data['seed_platform'],
+            target_platform=data['target_platform'],
+            target_energy=data['target_energy'],
+            target_valence=data['target_valence'],
+            activity=data['activity'],
+            environment=data['environment'],
+            amount=data['amount'],
+            playlist_name=data['playlist_name']
         )
         return jsonify({'url': playlist_url}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
+
 
 if __name__ == '__main__':
     app.run(debug=True)
