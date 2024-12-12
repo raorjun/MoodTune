@@ -2,7 +2,7 @@ import csv
 from dotenv import load_dotenv
 import os
 from data_structures import PriorityQueue
-from converter import PlaylistConverter  # Assuming your Converter class is in a file named converter.py
+from converter import PlaylistConverter 
 
 
 class PlaylistGenerator:
