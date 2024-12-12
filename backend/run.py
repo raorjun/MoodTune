@@ -46,11 +46,12 @@ def generate_playlist():
     target_valence = float(request.form.get('target_valence'))
     activity = request.form.get('activity')
     environment = request.form.get('environment')
+    target_platform = request.form.get('target_platform')
     amount = int(request.form.get('amount', 20))
     playlist_name = request.form.get('playlist_name', "Generated Playlist")
 
     # Validates required fields
-    if not all([seed_playlist_id, seed_platform, target_energy, target_valence, amount]):
+    if not all([seed_playlist_id, seed_platform, target_energy, target_platform, target_valence, amount]):
         return jsonify({'error': 'Missing required parameters'}), 400
 
     try:
@@ -58,6 +59,7 @@ def generate_playlist():
         playlist_url = playlist_generator.generate_playlist_from_seed(
             seed_playlist_id=seed_playlist_id,
             seed_platform=seed_platform,
+            target_platform=target_platform,
             target_energy=target_energy,
             target_valence=target_valence,
             activity=activity,

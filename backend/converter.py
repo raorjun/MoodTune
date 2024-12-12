@@ -1,60 +1,93 @@
-import spotipy
+import spotipy # Spotify API: https://spotipy.readthedocs.io/en/2.24.0/#
 from spotipy.oauth2 import SpotifyOAuth
-from ytmusicapi import YTMusic
+from ytmusicapi import YTMusic # YouTube Music API: https://ytmusicapi.readthedocs.io/en/stable/index.html
 import re
 import os
 from dotenv import load_dotenv
 
 
 class PlaylistConverter:
+    """
+    A class with methods for converting playlists between Spotify and YouTube Music.
+    """
+
     def __init__(self):
-        # Load Spotify API credentials
+        """
+        Initializes the PlaylistConverter by loading environment variables and setting up API clients for Spotify and YouTube Music.
+        """
         dotenv_path = os.path.join(os.path.dirname(__file__), 'config', '.env')
         load_dotenv(dotenv_path)
-        self.spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
+        self._spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
             client_id=os.getenv("SPOTIFY_CLIENT_ID"),
             client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
             redirect_uri="https://localhost:5173/callback",
             scope="playlist-read-private,playlist-read-collaborative,playlist-modify-private,playlist-modify-public",
         ))
-        self.spotify_username = os.getenv("SPOTIFY_USERNAME")
-        self.ytmusic = YTMusic("backend/config/browser.json")
+        self._spotify_username = os.getenv("SPOTIFY_USERNAME")
+        self._ytmusic = YTMusic("backend/config/browser.json")
 
     def get_spotify_tracks(self, playlist_url):
         """
-        Extracts track names and artists from a Spotify playlist.
+        Extracts track names and artists from a Spotify playlist and stores them in a list.
+
+        Args:
+            playlist_url: The URL of the Spotify playlist.
+
+        Returns:
+            A list containing track names and artists.
         """
+        # Get playlist id and extract tracks
         playlist_id = re.search(r"playlist/([\w\d]+)", playlist_url).group(1)
-        results = self.spotify.playlist_tracks(playlist_id)
-        tracks = []
+        results = self._spotify.playlist_tracks(playlist_id)
+        tracks = []  # Use a list instead of LinkedList
 
         for item in results['items']:
             track = item['track']
-            tracks.append(f"{track['name']} {track['artists'][0]['name']}")
+            track_str = f"{track['name']} {track['artists'][0]['name']}"
+            tracks.append(track_str)  # Append each track to the list
 
         return tracks
         
     def get_youtube_tracks(self, playlist_url):
         """
-        Extracts track names and artists from a YouTube Music playlist.
+        Extracts track names and artists from a YouTube Music playlist and stores them in a list.
+
+        Args:
+            playlist_url: The URL of the YouTube Music playlist.
+
+        Returns:
+            A list containing track names and artists.
         """
+        # Get playlist id and extract tracks
         playlist_id = re.search(r"list=([\w\d_-]+)", playlist_url).group(1)
-        playlist = self.ytmusic.get_playlist(playlist_id)
-        tracks = []
+        playlist = self._ytmusic.get_playlist(playlist_id)
+        tracks = []  # Use a list instead of LinkedList
 
         for track in playlist["tracks"]:
-            tracks.append(f"{track['title']} {track['artists'][0]['name']}")
+            track_str = f"{track['title']} {track['artists'][0]['name']}"
+            tracks.append(track_str)  # Append each track to the list
 
         return tracks
 
     def create_youtube_playlist(self, playlist_name, tracks):
         """
-        Searches YouTube Music and creates a playlist with the given tracks.
+        Searches YouTube Music for tracks and creates a playlist with the given tracks.
+
+        Args:
+            playlist_name: The name of the new YouTube playlist.
+            tracks: A list containing the track names and artists.
+
+        Returns:
+            A string URL of the newly created YouTube Music playlist, or None if the playlist creation fails.
         """
         video_ids = []
-        for track in tracks:
+
+        # Use list iteration to retrieve tracks
+        while tracks:
+            track = tracks.pop(0)  # Pop the first track from the list
+
             try:
-                search_results = self.ytmusic.search(query=track, filter="songs", limit=1)
+                search_results = self._ytmusic.search(query=track, filter="songs", limit=1)
                 if search_results:
                     video_id = search_results[0]["videoId"]
                     video_ids.append(video_id)
@@ -63,8 +96,9 @@ class PlaylistConverter:
             except Exception as e:
                 print(f"Error searching for {track}: {e}")
 
+        # Generate new YouTube Music playlist with converted tracks
         if video_ids:
-            playlist_id = self.ytmusic.create_playlist(
+            playlist_id = self._ytmusic.create_playlist(
                 title=playlist_name,
                 description="Converted from Spotify",
                 video_ids=video_ids,
@@ -76,24 +110,37 @@ class PlaylistConverter:
 
     def create_spotify_playlist(self, playlist_name, tracks):
         """
-        Searches Spotify and creates a playlist with the given tracks.
+        Searches Spotify for tracks and creates a playlist with the given tracks.
+
+        Args:
+            playlist_name: The name of the new Spotify playlist.
+            tracks: A list containing the track names and artists.
+
+        Returns:
+            A string URL of the newly created Spotify playlist.
         """
-        playlist = self.spotify.user_playlist_create(
-            user=self.spotify_username,
+        # Create a new playlist
+        playlist = self._spotify.user_playlist_create(
+            user=self._spotify_username,
             name=playlist_name,
             public=True
         )
 
         spotify_uris = []
-        for track in tracks:
-            result = self.spotify.search(q=track, type="track", limit=1)
+
+        # Use list iteration to retrieve tracks
+        while tracks:
+            track = tracks.pop(0)  # Pop the first track from the list
+
+            result = self._spotify.search(q=track, type="track", limit=1)
             if result["tracks"]["items"]:
                 spotify_uris.append(result["tracks"]["items"][0]["uri"])
             else:
                 print(f"No results found for {track}")
 
-        self.spotify.user_playlist_add_tracks(
-            user=self.spotify_username,
+        # Add tracks to playlist
+        self._spotify.user_playlist_add_tracks(
+            user=self._spotify_username,
             playlist_id=playlist["id"],
             tracks=spotify_uris
         )
@@ -103,6 +150,13 @@ class PlaylistConverter:
     def convert_playlist(self, source_url, target_platform):
         """
         Converts a playlist between Spotify and YouTube Music.
+
+        Args:
+            source_url: The URL of the source playlist (either from Spotify or YouTube Music).
+            target_platform: The platform to convert the playlist to ("spotify" or "youtube").
+
+        Returns:
+            A string URL of the converted playlist or an error message if the conversion fails.
         """
         if "spotify.com" in source_url:
             tracks = self.get_spotify_tracks(source_url)

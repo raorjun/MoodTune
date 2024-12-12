@@ -42,7 +42,7 @@ class Heap:
         
         rtn = self._data[0]
         self._data[0] = self._data[self.size() - 1]
-        self._data.pop()  # Remove the last element
+        self._data.pop() 
         self._heapify_down(0)
         return rtn
 
