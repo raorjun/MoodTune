@@ -19,8 +19,6 @@ class Node:
         self.next = None
 
 
-
-
 class LinkedList:
     """
     A generic linked list class
@@ -88,7 +86,17 @@ class LinkedList:
                 return
             
             current = current.next
-
+    
+    def pop(self):
+        """
+        Removes and returns the first node (head) of the linked list
+        """
+        if self.head is None:
+            return None 
+        
+        popped_value = self.head.value
+        self.head = self.head.next 
+        return popped_value
         
     def find(self, value):
         """
