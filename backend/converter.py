@@ -1,10 +1,9 @@
-import spotipy # Spotify API: https://spotipy.readthedocs.io/en/2.24.0/#
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from ytmusicapi import YTMusic # YouTube Music API: https://ytmusicapi.readthedocs.io/en/stable/index.html
+from ytmusicapi import YTMusic
 import re
 import os
 from dotenv import load_dotenv
-
 
 class PlaylistConverter:
     """
@@ -36,7 +35,6 @@ class PlaylistConverter:
         Returns:
             A list containing track names and artists.
         """
-        # Get playlist id and extract tracks
         playlist_id = re.search(r"playlist/([\w\d]+)", playlist_url).group(1)
         results = self._spotify.playlist_tracks(playlist_id)
         tracks = []  # Use a list instead of LinkedList
@@ -58,7 +56,6 @@ class PlaylistConverter:
         Returns:
             A list containing track names and artists.
         """
-        # Get playlist id and extract tracks
         playlist_id = re.search(r"list=([\w\d_-]+)", playlist_url).group(1)
         playlist = self._ytmusic.get_playlist(playlist_id)
         tracks = []  # Use a list instead of LinkedList
@@ -82,10 +79,8 @@ class PlaylistConverter:
         """
         video_ids = []
 
-        # Use list iteration to retrieve tracks
         while tracks:
             track = tracks.pop(0)  # Pop the first track from the list
-
             try:
                 search_results = self._ytmusic.search(query=track, filter="songs", limit=1)
                 if search_results:
@@ -96,7 +91,6 @@ class PlaylistConverter:
             except Exception as e:
                 print(f"Error searching for {track}: {e}")
 
-        # Generate new YouTube Music playlist with converted tracks
         if video_ids:
             playlist_id = self._ytmusic.create_playlist(
                 title=playlist_name,
@@ -119,7 +113,6 @@ class PlaylistConverter:
         Returns:
             A string URL of the newly created Spotify playlist.
         """
-        # Create a new playlist
         playlist = self._spotify.user_playlist_create(
             user=self._spotify_username,
             name=playlist_name,
@@ -128,17 +121,14 @@ class PlaylistConverter:
 
         spotify_uris = []
 
-        # Use list iteration to retrieve tracks
         while tracks:
             track = tracks.pop(0)  # Pop the first track from the list
-
             result = self._spotify.search(q=track, type="track", limit=1)
             if result["tracks"]["items"]:
                 spotify_uris.append(result["tracks"]["items"][0]["uri"])
             else:
                 print(f"No results found for {track}")
 
-        # Add tracks to playlist
         self._spotify.user_playlist_add_tracks(
             user=self._spotify_username,
             playlist_id=playlist["id"],
@@ -170,11 +160,45 @@ class PlaylistConverter:
         return "Invalid input or unsupported platform."
 
 
-# Testing the Converter
-if __name__ == "__main__":
-    source_url = input("Enter the playlist URL: ")
-    target_platform = input("Enter target platform (spotify/youtube): ")
+# Function to validate and handle user input
+def get_valid_url(prompt, valid_platforms):
+    """
+    Simple URL checker for Spotify or YouTube playlists.
+    """
+    while True:
+        url = input(prompt).strip()
+        if any(platform in url for platform in valid_platforms):  # Check if URL matches valid platforms
+            return url
+        else:
+            print("Invalid URL. Please enter a valid Spotify or YouTube playlist URL.")
 
+
+def get_valid_platform(prompt, valid_platforms):
+    """
+    Prompts the user for a valid platform (either 'spotify' or 'youtube') and returns it.
+    """
+    while True:
+        platform = input(prompt).strip().lower()
+        if platform in valid_platforms:
+            return platform
+        else:
+            print(f"Invalid platform. Please enter one of the following: {', '.join(valid_platforms)}.")
+
+
+if __name__ == "__main__":
+    # Define valid platforms
+    valid_platforms = ["spotify", "youtube"]
+
+    # Get user input with validation
+    source_url = get_valid_url("Enter the playlist URL (Spotify or YouTube): ", valid_platforms)
+    target_platform = get_valid_platform("Enter the target platform (spotify/youtube): ", valid_platforms)
+
+    # Create a PlaylistConverter instance
     converter = PlaylistConverter()
-    result = converter.convert_playlist(source_url, target_platform)
-    print(f"Converted playlist: {result}")
+
+    # Try to convert the playlist
+    try:
+        result = converter.convert_playlist(source_url, target_platform)
+        print(f"Converted playlist: {result}")
+    except Exception as e:
+        print(f"An error occurred: {e}")

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 from data_structures import PriorityQueue
 from converter import PlaylistConverter 
+import re
 
 
 class PlaylistGenerator:
@@ -162,22 +163,108 @@ class PlaylistGenerator:
 
         return playlist_url
 
+def get_valid_url(prompt):
+    """
+    Simple URL checker for Spotify or YouTube playlists.
+    """
+    while True:
+        url = input(prompt).strip()
+        # Check if the URL contains "spotify" or "youtube" as a basic validation
+        if "spotify" in url or "youtube" in url:
+            return url
+        else:
+            print("Invalid URL. Please enter a valid Spotify or YouTube playlist URL.")
 
-# Testing the PlaylistGenerator
+
+def get_valid_platform(prompt, valid_platforms):
+    """
+    Prompts the user for a valid platform (either 'spotify' or 'youtube') and returns it.
+    """
+    while True:
+        platform = input(prompt).strip().lower()
+        if platform in valid_platforms:
+            return platform
+        else:
+            print(f"Invalid platform. Please enter one of the following: {', '.join(valid_platforms)}.")
+
+
+def get_valid_float(prompt, min_value, max_value):
+    """
+    Prompts the user for a valid float value within a specified range.
+    """
+    while True:
+        try:
+            value = float(input(prompt).strip())
+            if min_value <= value <= max_value:
+                return value
+            else:
+                print(f"Value must be between {min_value} and {max_value}.")
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
+
+
+def get_valid_activity(prompt, valid_activities):
+    """
+    Prompts the user for a valid activity (from a predefined list).
+    """
+    while True:
+        activity = input(prompt).strip().lower()
+        if activity in valid_activities:
+            return activity
+        else:
+            print(f"Invalid activity. Please choose from {', '.join(valid_activities)}.")
+
+
+def get_valid_environment(prompt, valid_environments):
+    """
+    Prompts the user for a valid environment (from a predefined list).
+    """
+    while True:
+        environment = input(prompt).strip().lower()
+        if environment in valid_environments:
+            return environment
+        else:
+            print(f"Invalid environment. Please choose from {', '.join(valid_environments)}.")
+
+
+def get_valid_amount(prompt, min_value, max_value):
+    """
+    Prompts the user for a valid amount (an integer within a specified range).
+    """
+    while True:
+        try:
+            amount = int(input(prompt).strip())
+            if min_value <= amount <= max_value:
+                return amount
+            else:
+                print(f"Amount must be between {min_value} and {max_value}.")
+        except ValueError:
+            print("Invalid input. Please enter a valid integer.")
+
+
 if __name__ == "__main__":
     generator = PlaylistGenerator()
-    
-    # Input data
-    seed_playlist_url = input("Enter the playlist URL: ")
-    seed_platform = input("Enter the seed platform (spotify/youtube): ")
-    target_platform = input("Enter the target platform (spotify/youtube): ")
-    target_energy = 0.8
-    target_valence = 0.7
-    activity = "working out"
-    environment = "gym"
-    amount = 13
+
+    # Define valid platforms, activities, and environments
+    valid_platforms = ["spotify", "youtube"]
+    valid_activities = ["working out", "partying", "relaxing", "studying"]
+    valid_environments = ["gym", "car", "home", "party"]
 
     try:
+        # Get user inputs with validation
+        seed_playlist_url = get_valid_url("Enter the playlist URL (Spotify or YouTube): ")
+        seed_platform = get_valid_platform("Enter the seed platform (spotify/youtube): ", valid_platforms)
+        target_platform = get_valid_platform("Enter the target platform (spotify/youtube): ", valid_platforms)
+
+        target_energy = get_valid_float("Enter the target energy (0 to 1): ", 0, 1)
+        target_valence = get_valid_float("Enter the target valence (0 to 1): ", 0, 1)
+
+        activity = get_valid_activity("Enter the activity type (working out, partying, relaxing, studying): ", valid_activities)
+        environment = get_valid_environment("Enter the environment type (gym, car, home, party): ", valid_environments)
+
+        amount = get_valid_amount("Enter the number of tracks to include in the playlist (1 to 30): ", 1, 30)
+
+        # Generate playlist
         playlist_url = generator.generate_playlist_from_seed(
             seed_playlist_url=seed_playlist_url,
             seed_platform=seed_platform,
@@ -187,8 +274,11 @@ if __name__ == "__main__":
             activity=activity,
             environment=environment,
             amount=amount,
-            playlist_name="Workout Playlist"
+            playlist_name="Generated Playlist"
         )
+
         print(f"Generated playlist: {playlist_url}")
-    except Exception as e:
+    except ValueError as e:
         print(f"Error: {e}")
+    except Exception as e:
+        print(f"An error occurred while generating the playlist: {e}")
