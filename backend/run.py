@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Secure random key for session
 
-# Initialize SpotifyPlaylistGenerator
+# Initialize Playlist Generator
 playlist_generator = PlaylistGenerator()
 
 # Initialize Converter
@@ -15,7 +15,7 @@ playlist_converter = PlaylistConverter()
 
 @app.route('/')
 def home():
-    return "Welcome to the Playlist Converter and Generator!"
+    return "Welcome to MoodTune!"
 
 @app.route('/convert', methods=['POST'])
 def convert():
@@ -27,7 +27,7 @@ def convert():
         return jsonify({'error': 'Missing required parameters'}), 400
 
     try:
-        # Call the conversion method
+        # Calls the conversion method
         result_url = playlist_converter.convert_playlist(source_url, target_platform)
 
         if result_url:
@@ -39,7 +39,7 @@ def convert():
 
 @app.route('/generate', methods=['POST'])
 def generate_playlist():
-    # Get form data from the frontend
+    # Gets form data from the frontend
     seed_playlist_id = request.form.get('seed_playlist_id')
     seed_platform = request.form.get('seed_platform')
     target_energy = float(request.form.get('target_energy'))
@@ -49,12 +49,12 @@ def generate_playlist():
     amount = int(request.form.get('amount', 20))
     playlist_name = request.form.get('playlist_name', "Generated Playlist")
 
-    # Validate required fields
+    # Validates required fields
     if not all([seed_playlist_id, seed_platform, target_energy, target_valence, amount]):
         return jsonify({'error': 'Missing required parameters'}), 400
 
     try:
-        # Generate the playlist
+        # Generates the playlist
         playlist_url = playlist_generator.generate_playlist_from_seed(
             seed_playlist_id=seed_playlist_id,
             seed_platform=seed_platform,
