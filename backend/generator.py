@@ -11,6 +11,7 @@ class PlaylistGenerator:
         dotenv_path = os.path.join(os.path.dirname(__file__), 'config', '.env')
         load_dotenv(dotenv_path)
         self.converter = PlaylistConverter()
+        self.spotify = self.converter.spotify
         self.spotify_username = os.getenv("SPOTIFY_USERNAME")
 
     def fetch_seed_tracks(self, playlist_url, seed_platform):
@@ -23,11 +24,11 @@ class PlaylistGenerator:
             url = self.converter.convert_playlist(playlist_url, "spotify")
         
         seed_tracks = []
-        results = self.converter.spotify.playlist_tracks(url)
+        results = self.spotify.playlist_tracks(url)
 
         while results:
             seed_tracks.extend(results["items"])
-            results = self.converter.spotify.next(results) if results["next"] else None
+            results = self.spotify.next(results) if results["next"] else None
         
         seed_tracks = [track["track"] for track in seed_tracks if track["track"]]
         if not seed_tracks:  
@@ -101,8 +102,8 @@ class PlaylistGenerator:
             top_tracks.append(prioritized_tracks.pop())
 
         # Create a new playlist
-        playlist = self.converter.spotify.user_playlist_create(user=self.spotify_username, name=playlist_name, public=True)
-        self.converter.spotify.user_playlist_add_tracks(user=self.spotify_username, playlist_id=playlist["id"], tracks=top_tracks)
+        playlist = self.spotify.user_playlist_create(user=self.spotify_username, name=playlist_name, public=True)
+        self.spotify.user_playlist_add_tracks(user=self.spotify_username, playlist_id=playlist["id"], tracks=top_tracks)
 
         # Create the playlist on the target platform
         if target_platform == "spotify":
