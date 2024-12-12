@@ -19,7 +19,7 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=SPOTIFY_CLIENT_ID,
     client_secret=SPOTIFY_CLIENT_SECRET,
     redirect_uri=SPOTIFY_REDIRECT_URI,
-    scope="playlist-modify-private"
+    scope="playlist-read-private,playlist-read-collaborative,playlist-modify-private,playlist-modify-public"
 ))
 
 """
