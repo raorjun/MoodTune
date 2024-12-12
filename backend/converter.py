@@ -1,6 +1,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 from ytmusicapi import YTMusic
+import ytmusicapi
 import re
 import os
 from dotenv import load_dotenv
@@ -21,16 +22,21 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope="playlist-modify-private"
 ))
 
-# Set up YouTube Music client
-current_directory = os.path.dirname(os.path.abspath("oauth.json")) # Need to generate and provide this file
-with open(current_directory, "r") as oauth_file:
-    data = oauth_file.read()
-    try:
-        json.loads(data)
-        print("Valid JSON")
-    except json.JSONDecodeError as e:
-        print(f"Invalid JSON: {e}")
-ytmusic = YTMusic(current_directory)
+"""
+def get_ytmusic_with_new_token():
+    oauth_path = "backend/config/oauth.json"
+
+    # If old credentials exist, delete them
+    if os.path.exists(oauth_path):
+        os.remove(oauth_path)
+    
+    # Reinitialize YTMusic with a new token (interactive flow)
+    ytmusicapi.setup(filepath=oauth_path)
+    return YTMusic(oauth_path)
+"""
+
+# Load YouTube Music OAuth credentials
+ytmusic = YTMusic("backend/config/browser.json")
 
 # Function to extract Spotify playlist tracks
 def get_spotify_tracks(playlist_url):
@@ -46,19 +52,29 @@ def get_spotify_tracks(playlist_url):
 
 # Function to search YouTube Music and create a playlist
 def create_youtube_playlist(playlist_name, tracks):
-    # Search for each track on YouTube Music and collect video IDs
     video_ids = []
     for track in tracks:
-        search_results = ytmusic.search(query=track, filter="songs")
-        if search_results:
-            video_ids.append(search_results[0]["videoId"])
+        try:
+            # Perform search for each track (song filter)
+            search_results = ytmusic.search(query=track, filter="songs", limit=1)
 
-    # Create a new YouTube Music playlist
-    playlist_id = ytmusic.create_playlist(
-        title=playlist_name, description="Converted from Spotify", video_ids=video_ids
-    )
-
-    return f"https://music.youtube.com/playlist?list={playlist_id}"
+            if search_results:
+                # Assuming the first result is the correct one
+                video_id = search_results[0]["videoId"]
+                video_ids.append(video_id)
+                print(f"Found video for {track}: {video_id}")
+            else:
+                print(f"No results found for {track}")
+        except Exception as e:
+            print(f"Error searching for {track}: {e}")
+    
+    # If we have valid video IDs, create the playlist
+    if video_ids:
+        playlist_id = ytmusic.create_playlist(title=playlist_name, description="Converted from Spotify", video_ids=video_ids, privacy_status="PUBLIC")
+        return f"https://music.youtube.com/playlist?list={playlist_id}"
+    else:
+        print("No valid tracks found for playlist.")
+        return None
 
 # Function to extract YouTube Music playlist tracks
 def get_youtube_tracks(playlist_url):
@@ -81,8 +97,11 @@ def create_spotify_playlist(username, playlist_name, tracks):
         result = spotify.search(q=track, type="track", limit=1)
         if result["tracks"]["items"]:
             spotify_uris.append(result["tracks"]["items"][0]["uri"])
+            print(f"Found track for {track}")
+        else:
+            print(f"No results found for {track}")
 
-    spotify.user_playlist_add_tracks(user=username, playlist_id=playlist["id"], tracks=spotify_uris)
+    spotify.user_playlist_add_tracks(user=username, playlist_id=playlist["id"], tracks=spotify_uris, public=True)
 
     return playlist["external_urls"]["spotify"]
 
@@ -101,10 +120,9 @@ def convert_playlist(source_url, target_platform, spotify_username):
 
     return "Invalid input or unsupported platform."
 
-if __name__ == "__main__":
-    source_url = input("Enter the playlist URL: ")
-    target_platform = input("Enter target platform (spotify/youtube): ")
-    spotify_username = input("Enter your Spotify username: ") if target_platform == "spotify" else None
+source_url = input("Enter the playlist URL: ")
+target_platform = input("Enter target platform (spotify/youtube): ")
+spotify_username = input("Enter your Spotify username: ") if target_platform == "spotify" else None
 
-    result = convert_playlist(source_url, target_platform, spotify_username)
-    print(f"Converted playlist: {result}")
+result = convert_playlist(source_url, target_platform, spotify_username)
+print(f"Converted playlist: {result}")

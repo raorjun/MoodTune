@@ -1,11 +1,11 @@
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.oauth2 import SpotifyOAuth
 import os
-from data_structures import PriorityQueue
+import csv
 from dotenv import load_dotenv
+from data_structures import PriorityQueue
 
-# Spotify API credentials
+# Load Spotify API credentials
 dotenv_path = os.path.join(os.path.dirname(__file__), 'config', '.env')
 load_dotenv(dotenv_path)
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
@@ -17,127 +17,110 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=SPOTIFY_CLIENT_ID,
     client_secret=SPOTIFY_CLIENT_SECRET,
     redirect_uri=SPOTIFY_REDIRECT_URI,
-    scope="playlist-modify-private"
+    scope="playlist-read-private,playlist-read-collaborative,playlist-modify-private,playlist-modify-public"
 ))
 
-# Do not forget to convert spotify playlist to yt music if user selects spotify as their app
-# Function to generate a playlist based on user preferences
-def generate_playlist(username, genre, energy, valence, activity, explicit, amount, environment, playlist_name="Generated Playlist"):
-    
-    if explicit == False:
-        amount += 400
-    else:
-        amount += 100
+# Function to fetch tracks from a seed playlist
+def fetch_seed_tracks(seed_playlist_id):
+    seed_tracks = []
+    results = spotify.playlist_tracks(seed_playlist_id)
+    while results:
+        seed_tracks.extend(results["items"])
+        results = spotify.next(results) if results["next"] else None
+    return [track["track"] for track in seed_tracks if track["track"]]
 
-    recommendations = None
-    if environment == None: 
-        recommendations = spotify.recommendations(
-            seed_genres=genre.split(","),
-            limit=amount,
-            min_energy=energy - 0.2 if energy - 0.2 >= 0 else 0,
-            max_energy=energy + 0.2 if energy + 0.2 <= 1 else 1,
-            min_valence=valence - 0.2 if valence - 0.2 >= 0 else 0,
-            max_valence=valence + 0.2 if valence + 0.2 <= 1 else 1
-        )
-    else:
-        environments = {
-            "gym": 0.8,
-            "party": 0.9,
-            "library": 0.2,
-            "car": 0.6,
-            "work": 0.4
-        }
-        aggressiveness = environments[environment]
-        recommendations = spotify.recommendations(
-            seed_genres=genre.split(", "),
-            limit=amount,
-            min_energy=energy - 0.2 if energy - 0.2 >= 0 else 0.0,
-            max_energy=energy + 0.2 if energy + 0.2 <= 1 else 1.0,
-            min_valence=valence - 0.2 if valence - 0.2 >= 0 else 0.0,
-            max_valence=valence + 0.2 if valence + 0.2 <= 1 else 1.0,
-            min_loudness=aggressiveness - 0.2 if aggressiveness - 0.2 >= 0 else 0.0,
-            max_loudness=aggressiveness + 0.2 if aggressiveness + 0.2 <= 1 else 1.0
-        )
-    if not recommendations or not recommendations.get("tracks"):
-        raise ValueError("No tracks found based on the provided parameters.")
+# Function to load audio features from a CSV file
+def load_audio_features(csv_file="backend/tracks_features.csv"):
+    audio_features = {}
+    with open(csv_file, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)  # Read as a dictionary using the header row
+        for row in reader:
+            song_id = row["id"]
+            audio_features[song_id] = {
+                "energy": float(row["energy"]),
+                "valence": float(row["valence"]),
+                "danceability": float(row["danceability"]),
+                "loudness": float(row["loudness"]),
+            }
+    return audio_features
 
-    if activity != None:
-        activities = {
-            "running": 0.8,
-            "studying": 0.3,
-            "dancing": 0.9,
-            "relaxing": 0.2
-        }
-        energy = activities[activity]
-        recommendations = spotify.recommendations(
-            seed_genres=genre.split(","),
-            limit=100,
-            target_energy=energy,
-            target_valence=valence
-        )
-    tracks = generate_playlist_helper(recommendations, activity, amount)
-    track_uris = [track["uri"] for track in tracks]
+# Generate playlist using user-defined targets and minimal difference scoring
+def generate_playlist_from_seed(username, seed_playlist_id, csv_file, target_energy, target_valence, activity, environment, amount, playlist_name="Generated Playlist"):
+    seed_tracks = fetch_seed_tracks(seed_playlist_id)
+    if not seed_tracks:
+        raise ValueError("No tracks found in the seed playlist.")
 
-    # Creates a new Spotify playlist
-    playlist = spotify.user_playlist_create(user=username, name=playlist_name, public=False)
-    spotify.user_playlist_add_tracks(user=username, playlist_id=playlist["id"], tracks=track_uris)
+    # Load audio features from the CSV file
+    audio_features = load_audio_features(csv_file)
+
+    # Define target loudness based on activity
+    target_loudness = -7
+    if activity in ["working out", "partying"]:
+        target_loudness = -4
+    elif activity in ["relaxing, studying"]:
+        target_loudness = -14
+
+    # Define target danceability based on environment
+    environment_danceability_map = {
+        "gym": 0.7,
+        "car": 0.6,
+        "home": 0.4,
+        "party": 0.9,
+        "default": 0.5
+    }
+    target_danceability = environment_danceability_map.get(environment, environment_danceability_map["default"])
+
+    # Priority queue for ranking tracks
+    prioritized_tracks = PriorityQueue()
+
+    # Calculate score for each track based on minimal difference from targets
+    for track in seed_tracks:
+        track_id = track["id"]
+        if track_id in audio_features:
+            features = audio_features[track_id]
+            score = abs(features["energy"] - target_energy) \
+                    + abs(features["valence"] - target_valence) \
+                    + abs(features["loudness"] - target_loudness) \
+                    + abs(features["danceability"] - target_danceability)
+            # Insert with score (lower score = higher priority)
+            prioritized_tracks.insert(track_id, -score)
+
+    # Get the top tracks based on the priority queue
+    top_tracks = []
+    for _ in range(min(amount, prioritized_tracks.size())):
+        top_tracks.append(prioritized_tracks.pop())
+
+    # Create a new playlist
+    playlist = spotify.user_playlist_create(user=username, name=playlist_name, public=True)
+    spotify.user_playlist_add_tracks(user=username, playlist_id=playlist["id"], tracks=top_tracks)
 
     return playlist["external_urls"]["spotify"]
 
-def generate_playlist_helper(recommendations, activity, amount):
-    
-    prioritized_tracks = PriorityQueue()
-    for track in recommendations["tracks"]:
-        track_features = spotify.audio_features(track["uri"])[0]
-        weight = 0
-
-        if activity == "working out":
-            weight = track_features["loudness"] + track_features["energy"] + track_features["valence"]
-        elif activity == "partying":
-            weight = track_features["danceability"] + track_features["energy"] + track_features["loudness"]
-        elif activity == "dancing":
-            weight = track_features["danceability"]
-        elif activity == "running":
-            weight = track_features["energy"] + track_features["valence"]
-        elif activity == "studying" or activity == "relaxing":
-            weight = -track_features["valence"] - track_features["energy"] - track_features["loudness"]
-
-        prioritized_tracks.insert(track, weight)
-
-    top_tracks = [prioritized_tracks.pop() for _ in range(min(amount, prioritized_tracks.size()))]
-
-    return top_tracks
-        
-
 # Main function to collect user input and generate a playlist
 if __name__ == "__main__":
-
     print("Spotify Playlist Generator!")
     username = input("Enter your Spotify username: ")
-    genre = input("Enter preferred genres (comma-separated, e.g., pop, rock): ")
-    energy = float(input("Enter energy level (0.0 to 1.0): "))
-    valence = float(input("Enter valence level (0.0 to 1.0, happiness measure): "))
-    explicit = input("Allow explicit songs? (yes/no): ").strip().lower() == "yes"
-    amount = int(input("Enter the number of tracks you want (e.g., 20): "))
-    environment = input("Choose the environment (gym, party, library, car, work) or leave blank: ").strip().lower() or None
-    activity = input("Choose an activity (running, studying, dancing, relaxing) or leave blank: ").strip().lower() or None
-    playlist_name = input("Enter a name for your playlist (or leave blank for 'Generated Playlist'): ").strip() or "Generated Playlist"
-
-    print("\nGenerating your playlist...")
+    seed_playlist_id = input("Enter the seed playlist ID: ")
+    target_energy = float(input("Enter target energy level (0.0 to 1.0): "))
+    target_valence = float(input("Enter target valence level (0.0 to 1.0): "))
+    activity = input("Enter the activity (working out, partying, studying, relaxing): ").strip().lower()
+    environment = input("Enter the environment (gym, car, home, party): ").strip().lower()
+    amount = int(input("Enter the number of tracks you want: "))
+    playlist_name = input("Enter a name for your playlist: ").strip() or "Generated Playlist"
 
     try:
-        playlist_url = generate_playlist(
+        print("\nGenerating your playlist...")
+        playlist_url = generate_playlist_from_seed(
             username=username,
-            genre=genre,
-            energy=energy,
-            valence=valence,
+            seed_playlist_id=seed_playlist_id,
+            csv_file="backend/tracks_features.csv",
+            target_energy=target_energy,
+            target_valence=target_valence,
             activity=activity,
-            explicit=explicit,
-            amount=amount,
             environment=environment,
+            amount=amount,
             playlist_name=playlist_name
         )
-        print(f"\nYour playlist has been created! Open it here: {playlist_url}")
+        print(f"Your playlist has been created! Open it here: {playlist_url}")
     except Exception as e:
-        print("\nAn error occurred while generating the playlist.")
-        print(f"Error details: {e}")
+        print(f"\nAn error occurred while generating the playlist: {e}")
