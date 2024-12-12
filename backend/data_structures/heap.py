@@ -6,7 +6,6 @@ class Heap:
     def __init__(self):
         """
         Initializes a new instance of the Heap class.
-        Only store tuple structured: (weight (int), value (Any))
         """
         self._data = []
 
@@ -14,7 +13,8 @@ class Heap:
         """
         Inserts a new value into the heap.
 
-        :param value: The value to be inserted.
+        Args:
+            value: The value to be inserted
         """
         self._data.append(value)
         self._heapify_up(self.size() - 1)
@@ -24,7 +24,8 @@ class Heap:
         """
         Extracts the minimum value from the heap.
 
-        :return: The minimum value.
+        Returns:
+            The minimum value, or None if the heap is empty
         """
         
         if self.is_empty():
@@ -39,7 +40,8 @@ class Heap:
         """
         Returns the minimum value from the heap without removing it.
 
-        :return: The minimum value.
+        Returns:
+            The minimum value, or None if the heap is empty
         """
         
         if self.is_empty():
@@ -51,7 +53,8 @@ class Heap:
         """
         Returns the number of elements in the heap.
 
-        :return: The number of elements.
+        Returns:
+            The number of elements in the heap
         """
         return len(self._data)
     
@@ -59,7 +62,8 @@ class Heap:
         """
         Returns a boolean value indicating whether the heap is empty.
 
-        :return: True if the heap is empty, False otherwise.
+            Returns:
+            True if the heap is empty, False otherwise
         """
         return self.size() == 0
 
@@ -67,7 +71,8 @@ class Heap:
         """
         Maintains the heap property by moving a node up the tree.
 
-        :param index: The index of the node to move up.
+        Args:
+            index: The index of the node to move up
         """
         
         if index == 0:
@@ -85,7 +90,8 @@ class Heap:
         """
         Maintains the heap property by moving a node down the tree.
 
-        :param index: The index of the node to move down.
+        Args:
+            index: The index of the node to move down
         """
         
         if index >= self.size():
@@ -103,9 +109,12 @@ class Heap:
         """
         Compares two items in the heap.
 
-        :param item1: The first item.
-        :param item2: The second item.
-        :return: 1 if item1 is greater than item2, -1 if item1 is less than item2, and 0 otherwise.
+        Args:
+            item1: The first item
+            item2: The second item
+        
+        Returns:
+            1 if item1 is greater than item2, -1 if item1 is less than item2, and 0 otherwise
         """
 
         if item1.get(0) < item2.get(0):

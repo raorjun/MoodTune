@@ -2,12 +2,15 @@ import { useState } from 'react'
 import spotifyIcon from './assets/spotify.svg'
 import ytMusicIcon from './assets/youtube.svg'
 import arrowIcon from './assests/arrow.svg'
+//smiley face to frowny face svgs for mood
+//number input for number of songs 5-30
+
 
 function App() {
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [moodParams, setMoodParams] = useState({
-    valence: 50,
-    energy: 50,
+    valence: 0.5,
+    energy: 0.5,
     environment: '',
     activity: '',
     genre: '',
@@ -18,7 +21,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <main className="container mx-auto px-4 py-12">
-        {/* Brand + Hero */}
+        {/*hero - main page*/}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white/90 mb-8">MoodTune</h1>
           <h2 className="text-7xl font-bold text-white mb-6">
@@ -79,7 +82,7 @@ function App() {
                 {/* Mood Sliders */}
                 <div className="space-y-4">
                   <div>
-                    <label className="text-white text-sm mb-1 block">Emotional Valence (Mood)</label>
+                    <label className="text-white text-sm mb-1 block">Mood</label>
                     <input
                       type="range"
                       min="0"
@@ -102,12 +105,11 @@ function App() {
                   </div>
                 </div>
 
-                {/* Context Inputs */}
+                {/*context input*/}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-white text-sm mb-1 block">Environment</label>
-                    <input
-                      type="text"
+                    <select
                       className="w-full bg-white/10 rounded-lg px-4 py-2 text-white"
                       placeholder="Where are you?"
                       value={moodParams.environment}
